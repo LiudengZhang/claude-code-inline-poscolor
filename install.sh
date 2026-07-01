@@ -9,7 +9,7 @@ set -euo pipefail
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CLAUDE_DIR="${HOME}/.claude"
 SETTINGS="${CLAUDE_DIR}/settings.json"
-HOOK="${REPO}/messagedisplay_hook.py"
+HOOK="${REPO}/src/messagedisplay_hook.py"
 
 echo "==> repo:     ${REPO}"
 echo "==> settings: ${SETTINGS}"
@@ -34,7 +34,7 @@ print("    spaCy OK")
 PY
 
 echo "==> making scripts executable"
-chmod +x "${HOOK}" "${REPO}/mdcolor_daemon.py" "${REPO}/bin/pos-color" "${REPO}/bin/colorize"
+chmod +x "${HOOK}" "${REPO}/src/mdcolor_daemon.py" "${REPO}/bin/pos-color" "${REPO}/bin/colorize"
 
 echo "==> registering MessageDisplay hook in settings.json"
 mkdir -p "${CLAUDE_DIR}"

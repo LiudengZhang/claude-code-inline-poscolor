@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 /ABSOLUTE/PATH/claude-code-inline-poscolor/messagedisplay_hook.py"
+            "command": "python3 /ABSOLUTE/PATH/claude-code-inline-poscolor/src/messagedisplay_hook.py"
           }
         ]
       }
