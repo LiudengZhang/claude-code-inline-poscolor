@@ -7,6 +7,8 @@ for faster, ADHD-friendly reading.
 
 **[简体中文](README.zh-Hans.md) · [繁體中文](README.zh-Hant.md)**
 
+![the same sentence plain, then colored by part of speech](examples/before-after.svg)
+
 | Part of speech | Color *(default palette)* | 256-code |
 |---|---|---|
 | noun / proper | bright cyan | 45 |
@@ -14,6 +16,10 @@ for faster, ADHD-friendly reading.
 | verb | bright orange | 208 |
 | adverb | dim orange | 130 |
 | everything else | gray | 250 |
+
+Five palettes ship built in — preview and switch with `bin/palettes`:
+
+![the same sentence under all five palettes](examples/palettes.svg)
 
 ## Install
 
