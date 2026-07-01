@@ -1,0 +1,14 @@
+{
+  "name": "inline-poscolor",
+  "owner": { "name": "LiudengZhang" },
+  "description": "Inline part-of-speech coloring for Claude Code.",
+  "plugins": [
+    {
+      "name": "poscolor",
+      "source": "./",
+      "description": "Always-on inline part-of-speech coloring for Claude Code messages.",
+      "version": "1.0.0",
+      "author": { "name": "LiudengZhang" }
+    }
+  ]
+}

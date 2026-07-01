@@ -1,0 +1,14 @@
+{
+  "hooks": {
+    "MessageDisplay": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/src/messagedisplay_hook.py"
+          }
+        ]
+      }
+    ]
+  }
+}

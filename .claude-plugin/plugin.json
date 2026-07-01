@@ -1,0 +1,9 @@
+{
+  "name": "poscolor",
+  "version": "1.0.0",
+  "description": "Always-on inline part-of-speech coloring for Claude Code messages.",
+  "author": { "name": "LiudengZhang" },
+  "homepage": "https://github.com/LiudengZhang/claude-code-inline-poscolor",
+  "repository": "https://github.com/LiudengZhang/claude-code-inline-poscolor",
+  "license": "MIT"
+}

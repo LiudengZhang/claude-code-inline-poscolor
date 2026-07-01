@@ -22,15 +22,28 @@
 
 ## 安装
 
+两种方式都需先安装一次 spaCy 和模型：
+
+```bash
+pip install spacy && python -m spacy download en_core_web_sm
+```
+
+**方式 A —— 作为 Claude Code 插件**（附带 `/poscolor:*` 命令）：
+
+```
+/plugin marketplace add LiudengZhang/claude-code-inline-poscolor
+/plugin install poscolor@inline-poscolor
+```
+
+**方式 B —— 手动安装**，不使用插件系统：
+
 ```bash
 git clone https://github.com/LiudengZhang/claude-code-inline-poscolor.git
 cd claude-code-inline-poscolor
-pip install -r requirements.txt
-./install.sh          # 下载模型并注册 MessageDisplay 钩子
+./install.sh          # 把 MessageDisplay 钩子合并进 ~/.claude/settings.json
 ```
 
-新开一个 Claude Code 会话即可启用着色。`install.sh` 会把钩子合并进
-`~/.claude/settings.json`，不会覆盖你的其他设置。
+新开一个 Claude Code 会话即可启用着色。
 
 ## 工作原理
 
@@ -40,6 +53,16 @@ pip install -r requirements.txt
 故障即净：若守护进程无法启动，则原样显示文本。
 
 ## 控制
+
+使用插件时，三个斜杠命令：
+
+```
+/poscolor:toggle              # 着色 开 <-> 关
+/poscolor:palette pink-green  # 切换配色（不带参数则列出全部）
+/poscolor:model en_core_web_trf   # 更换模型（不带参数则显示当前）
+```
+
+或直接操作（用不用插件都可以）：
 
 ```bash
 touch ~/.claude/mdcolor_off                       # 立即关闭（rm 即可重新开启）

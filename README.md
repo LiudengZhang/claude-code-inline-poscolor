@@ -23,15 +23,28 @@ Five palettes ship built in — preview and switch with `bin/palettes`:
 
 ## Install
 
+Either way, install spaCy + the model once:
+
+```bash
+pip install spacy && python -m spacy download en_core_web_sm
+```
+
+**Option A — as a Claude Code plugin** (adds the `/poscolor:*` commands):
+
+```
+/plugin marketplace add LiudengZhang/claude-code-inline-poscolor
+/plugin install poscolor@inline-poscolor
+```
+
+**Option B — manual**, no plugin system:
+
 ```bash
 git clone https://github.com/LiudengZhang/claude-code-inline-poscolor.git
 cd claude-code-inline-poscolor
-pip install -r requirements.txt
-./install.sh          # fetches the model + registers the MessageDisplay hook
+./install.sh          # merges the MessageDisplay hook into ~/.claude/settings.json
 ```
 
-Start a new Claude Code session and coloring is on. `install.sh` merges the hook into
-`~/.claude/settings.json` without clobbering your other settings.
+Start a new Claude Code session and coloring is on.
 
 ## How it works
 
@@ -42,6 +55,16 @@ round-trip after a one-time ~4 s cold start. Fail-clean: if the daemon can't sta
 original text is shown unchanged.
 
 ## Controls
+
+With the plugin, three slash commands:
+
+```
+/poscolor:toggle              # coloring on <-> off
+/poscolor:palette pink-green  # switch palette (no arg lists them)
+/poscolor:model en_core_web_trf   # change model (no arg shows current)
+```
+
+Or directly, with or without the plugin:
 
 ```bash
 touch ~/.claude/mdcolor_off                       # disable instantly (rm to re-enable)
