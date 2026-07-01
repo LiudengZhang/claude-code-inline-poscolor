@@ -1,0 +1,36 @@
+#!/usr/bin/env python3
+"""Colorize hand-tagged text with ANSI. You author the tags, so jargon is exact.
+
+Markup:
+  <n>word</n>  noun / proper noun -> bright cyan (anchor)
+  <j>word</j>  adjective          -> dim cyan  (noun-family, dimmed)
+  <v>word</v>  verb               -> bright orange (distinct from noun)
+  <d>word</d>  adverb             -> dim orange (verb-family, dimmed)
+  untagged text                    -> light gray (quiet background)
+
+Usage:
+  echo '<n>PARP</n> <v>inhibits</v> repair' | colorize
+"""
+import sys, re
+
+COLOR = {"n": "38;5;45", "j": "38;5;31", "v": "38;5;208", "d": "38;5;130"}
+GRAY, RESET = "38;5;250", "\033[0m"
+
+
+def colorize(text):
+    out, pos = [], 0
+    for m in re.finditer(r"<([nvjd])>(.*?)</\1>", text, re.S):
+        if m.start() > pos:
+            out.append(f"\033[{GRAY}m{text[pos:m.start()]}{RESET}")
+        out.append(f"\033[{COLOR[m.group(1)]}m{m.group(2)}{RESET}")
+        pos = m.end()
+    if pos < len(text):
+        out.append(f"\033[{GRAY}m{text[pos:]}{RESET}")
+    return "".join(out)
+
+
+if __name__ == "__main__":
+    t = sys.stdin.read()
+    sys.stdout.write(colorize(t))
+    if not t.endswith("\n"):
+        sys.stdout.write("\n")

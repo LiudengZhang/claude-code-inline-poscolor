@@ -1,0 +1,15 @@
+{
+  "//": "Merge this into ~/.claude/settings.json. Replace /ABSOLUTE/PATH with where you cloned this repo. install.sh does this for you automatically.",
+  "hooks": {
+    "MessageDisplay": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 /ABSOLUTE/PATH/claude-code-inline-poscolor/messagedisplay_hook.py"
+          }
+        ]
+      }
+    ]
+  }
+}

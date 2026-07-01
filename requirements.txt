@@ -1,0 +1,4 @@
+spacy>=3.7
+# The English model is not a pip package on PyPI; fetch it once with:
+#   python -m spacy download en_core_web_sm
+# (install.sh does this automatically.)

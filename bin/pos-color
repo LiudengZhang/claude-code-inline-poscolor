@@ -1,0 +1,48 @@
+#!/usr/bin/env python3
+"""Color text by part of speech for the terminal using spaCy + ANSI 256-color.
+
+Usage:
+  pos-color FILE [--legend]
+  cat FILE | pos-color [--legend]
+"""
+import sys, spacy
+
+# POS -> ANSI 256-color foreground code (two-family scheme)
+COLORS = {
+    "NOUN": 45,  "PROPN": 45,   # bright cyan  (anchor)
+    "ADJ":  31,                 # dim cyan     (noun-family, dimmed)
+    "VERB": 208,                # bright orange(distinct from noun)
+    "ADV":  130,                # dim orange   (verb-family, dimmed)
+}
+GRAY = 250                      # everything else -> light gray
+RESET = "\033[0m"
+LEGEND = [("NOUN", 45), ("ADJ", 31), ("VERB", 208), ("ADV", 130), ("other", 250)]
+
+
+def paint(tok):
+    if tok.is_space:
+        return tok.text_with_ws
+    code = COLORS.get(tok.pos_, GRAY)
+    return f"\033[38;5;{code}m{tok.text}{RESET}{tok.whitespace_}"
+
+
+def legend():
+    parts = [f"\033[38;5;{c}m{name}{RESET}" for name, c in LEGEND]
+    return "  ".join(parts)
+
+
+def main():
+    args = [a for a in sys.argv[1:] if not a.startswith("-")]
+    show_legend = "--legend" in sys.argv or "-l" in sys.argv
+    text = open(args[0]).read() if args else sys.stdin.read()
+    nlp = spacy.load("en_core_web_sm", disable=["ner", "lemmatizer"])
+    out = "".join(paint(t) for t in nlp(text))
+    if show_legend:
+        print(legend() + "\n")
+    sys.stdout.write(out)
+    if not out.endswith("\n"):
+        sys.stdout.write("\n")
+
+
+if __name__ == "__main__":
+    main()
