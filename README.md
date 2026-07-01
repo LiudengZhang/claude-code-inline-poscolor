@@ -65,6 +65,32 @@ touch ~/.claude/mdcolor_off     # off  (messages stream and display normally)
 rm -f ~/.claude/mdcolor_off     # on
 ```
 
+## Palettes
+
+Each palette is two families: a noun hue (noun + dimmed adjective) paired with a
+verb hue (verb + dimmed adverb), plus constant gray for everything else. Five ship
+built in:
+
+| Palette | Noun / Adjective | Verb / Adverb |
+|---|---|---|
+| `cyan-orange` *(default)* | cyan / dim cyan | orange / dim orange |
+| `pink-green` | hot pink / rose | green / dim green |
+| `gold-purple` | gold / olive | purple / dim purple |
+| `blue-yellow` | blue / dim blue | yellow / amber |
+| `teal-magenta` | teal / dim teal | magenta / dim magenta |
+
+Preview them all as colored sample sentences, then switch — the daemon reads the
+active palette per message, so it changes instantly with no restart:
+
+```bash
+bin/palettes                 # preview every palette
+bin/palettes pink-green      # set the active palette
+```
+
+The choice is stored in `~/.claude/mdcolor_palette`. To add your own, edit the
+`PALETTES` dict (name -> noun, adjective, verb, adverb as 256-color codes) in
+`mdcolor_daemon.py` and `bin/palettes`.
+
 ## Known limitation (read this)
 
 The chat renderer shows markdown **and** embedded ANSI together — but the moment

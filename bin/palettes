@@ -1,0 +1,64 @@
+#!/usr/bin/env python3
+"""Preview every POS color palette and switch between them.
+
+  palettes            # show all palettes as colored sample sentences
+  palettes NAME       # set NAME as the active palette (writes ~/.claude/mdcolor_palette)
+
+Each palette is two families: a noun hue + its dimmed adjective, and a verb hue +
+its dimmed adverb, plus a constant gray for everything else.
+"""
+import os, sys
+
+RESET = "\033[0m"
+GRAY = 250
+PALETTE_FILE = os.path.expanduser("~/.claude/mdcolor_palette")
+PALETTES = {
+    "cyan-orange":  (45, 31, 208, 130),
+    "pink-green":   (205, 168, 40, 28),
+    "gold-purple":  (220, 136, 129, 91),
+    "blue-yellow":  (33, 24, 226, 178),
+    "teal-magenta": (44, 30, 201, 163),
+}
+# sample sentence tagged by role: n=noun j=adj v=verb d=adverb o=other
+SAMPLE = [("The", "o"), ("clever", "j"), ("model", "n"), ("quietly", "d"),
+          ("learns", "v"), ("robust", "j"), ("patterns", "n"), ("from", "o"),
+          ("noisy", "j"), ("data", "n"), (".", "o")]
+
+
+def c(code, s):
+    return f"\033[38;5;{code}m{s}{RESET}"
+
+
+def render(name):
+    noun, adj, verb, adv = PALETTES[name]
+    role = {"n": noun, "j": adj, "v": verb, "d": adv, "o": GRAY}
+    legend = "  ".join(c(role[r], lbl) for r, lbl in
+                       [("n", "noun"), ("j", "adj"), ("v", "verb"), ("d", "adv")])
+    sent = " ".join(c(role[r], w) for w, r in SAMPLE).replace(" .", ".")
+    return f"{name:<13} {legend}\n              {sent}\n"
+
+
+def main():
+    if len(sys.argv) > 1:
+        name = sys.argv[1]
+        if name not in PALETTES:
+            sys.exit(f"unknown palette '{name}'. choose: {', '.join(PALETTES)}")
+        with open(PALETTE_FILE, "w") as f:
+            f.write(name + "\n")
+        print(f"active palette -> {name}")
+        print(render(name))
+        return
+    active = "cyan-orange"
+    try:
+        with open(PALETTE_FILE) as f:
+            active = f.read().strip() or active
+    except OSError:
+        pass
+    for name in PALETTES:
+        mark = "  <- active" if name == active else ""
+        sys.stdout.write(render(name).replace("\n", mark + "\n", 1) if mark else render(name))
+        print()
+
+
+if __name__ == "__main__":
+    main()
