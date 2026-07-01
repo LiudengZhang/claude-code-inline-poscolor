@@ -19,9 +19,13 @@ import os, re, socket
 SOCK = os.environ.get("MDCOLOR_SOCK", "/tmp/mdcolor_%d.sock" % os.getuid())
 IDLE = int(os.environ.get("MDCOLOR_IDLE", "3600"))  # seconds idle before exit
 PALETTE_FILE = os.path.expanduser("~/.claude/mdcolor_palette")
+MODEL_FILE = os.path.expanduser("~/.claude/mdcolor_model")
 
 RESET = "\033[0m"
 GRAY = 250
+DEFAULT_MODEL = "en_core_web_sm"    # small model is fast and, given full-sentence
+# context, as accurate as md/trf in practice. Any installed spaCy English model works;
+# change with: echo en_core_web_trf > ~/.claude/mdcolor_model  (then restart the daemon)
 DEFAULT_PALETTE = "cyan-orange"
 # name -> (noun/propn, adjective, verb, adverb)   [256-color codes]
 PALETTES = {
@@ -37,6 +41,25 @@ SKIP_RE = re.compile(r"(`[^`]*`|\*\*[^*]+\*\*|\*[^*]+\*|__[^_]+__|_[^_]+_)")
 FENCE_RE = re.compile(r"^\s*```")
 
 _NLP = None
+
+
+def active_model():
+    """spaCy model to load: $MDCOLOR_MODEL, else MODEL_FILE, else the default.
+
+    Read once at daemon startup (the model is loaded once and kept warm), so
+    changing it takes effect on the next daemon restart, not per request.
+    """
+    name = os.environ.get("MDCOLOR_MODEL")
+    if name:
+        return name
+    try:
+        with open(MODEL_FILE) as f:
+            n = f.read().strip()
+        if n:
+            return n
+    except OSError:
+        pass
+    return DEFAULT_MODEL
 
 
 def active_colors():
@@ -120,7 +143,7 @@ def colorize(text):
 def main():
     global _NLP
     import spacy
-    _NLP = spacy.load("en_core_web_sm", disable=["ner", "lemmatizer"])
+    _NLP = spacy.load(active_model(), disable=["ner", "lemmatizer"])
 
     if os.path.exists(SOCK):
         os.remove(SOCK)

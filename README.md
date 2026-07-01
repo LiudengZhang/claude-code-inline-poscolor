@@ -91,6 +91,24 @@ The choice is stored in `~/.claude/mdcolor_palette`. To add your own, edit the
 `PALETTES` dict (name -> noun, adjective, verb, adverb as 256-color codes) in
 `mdcolor_daemon.py` and `bin/palettes`.
 
+## Model
+
+The tagger defaults to spaCy's small model, `en_core_web_sm`. It's the right
+default: once each sentence is tagged with full context (the daemon does this),
+the small model is both the fastest (~17 ms/message warm) and, in practice, as
+accurate as the larger models on noun/verb-ambiguous words like *scores*,
+*colors*, and *reads*. `en_core_web_trf` is ~11× slower per message for no
+accuracy gain in testing.
+
+To use a different installed model, name it and restart the daemon:
+
+```bash
+echo en_core_web_trf > ~/.claude/mdcolor_model   # or set $MDCOLOR_MODEL
+```
+
+Unlike palettes, the model is loaded once at startup, so a change takes effect
+on the next daemon restart (kill the running daemon; the hook respawns it).
+
 ## Known limitation (read this)
 
 The chat renderer shows markdown **and** embedded ANSI together — but the moment
