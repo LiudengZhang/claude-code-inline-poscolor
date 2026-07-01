@@ -53,40 +53,60 @@ def active_colors():
     return {"NOUN": noun, "PROPN": noun, "ADJ": adj, "VERB": verb, "ADV": adv}
 
 
-def color_segment(seg, colors):
-    out = []
-    for tok in _NLP(seg):
-        if tok.is_alpha:
-            code = colors.get(tok.pos_, GRAY)
-            out.append(f"\033[38;5;{code}m{tok.text}{RESET}{tok.whitespace_}")
-        else:
-            out.append(tok.text_with_ws)
-    return "".join(out)
+def compute_skips(text):
+    """Return (tagger_copy, skip_ranges).
+
+    skip_ranges are char spans that must NOT be colored: fenced-code blocks,
+    table rows, leading markdown markers, and inline spans. tagger_copy blanks
+    fenced-code/table regions to spaces (same length -> offsets preserved) so the
+    tagger isn't confused by code, while inline-span *content* and the words after
+    markers stay in place so the surrounding sentence keeps full grammatical
+    context. The whole message is tagged in one pass; coloring is masked by span.
+
+    This is the fix for context-blind mis-tagging: tagging fragments (e.g. the
+    text after an inline `code` span, or a line with its subject stripped) makes
+    spaCy guess noun/verb-ambiguous words wrong ("scores", "colors", "reads").
+    """
+    chars = list(text)
+    skips, pos, in_fence = [], 0, False
+    for line in text.split("\n"):
+        start, end, stripped = pos, pos + len(line), line.strip()
+        if FENCE_RE.match(line):
+            in_fence = not in_fence
+            skips.append((start, end))
+            chars[start:end] = " " * (end - start)
+        elif in_fence or stripped.startswith("|"):
+            skips.append((start, end))
+            chars[start:end] = " " * (end - start)
+        elif stripped:
+            m = LEAD_RE.match(line)
+            if m and m.end():
+                skips.append((start, start + m.end()))   # leading ##/-/> literal
+            for sm in SKIP_RE.finditer(line):
+                skips.append((start + sm.start(), start + sm.end()))
+        pos = end + 1                       # +1 for the '\n'
+    return "".join(chars), skips
 
 
-def color_body(body, colors):
-    parts = SKIP_RE.split(body)
-    for i, part in enumerate(parts):
-        if i % 2 == 1 or not part:          # matched inline span -> leave literal
-            continue
-        parts[i] = color_segment(part, colors)
-    return "".join(parts)
+def _masked(a, b, ranges):
+    return any(a < r1 and r0 < b for r0, r1 in ranges)
 
 
 def colorize(text):
     colors = active_colors()
-    out, in_fence = [], False
-    for line in text.split("\n"):
-        if FENCE_RE.match(line):
-            in_fence = not in_fence
-            out.append(line)                        # fence marker + code = literal
-        elif in_fence or line.strip().startswith("|") or not line.strip():
-            out.append(line)                        # code / table / blank = literal
+    tagger_copy, skips = compute_skips(text)
+    out, prev = [], 0
+    for tok in _NLP(tagger_copy):
+        i, j = tok.idx, tok.idx + len(tok.text)
+        out.append(text[prev:i])            # gap + whitespace, verbatim from original
+        word = text[i:j]
+        if tok.is_alpha and not _masked(i, j, skips):
+            out.append(f"\033[38;5;{colors.get(tok.pos_, GRAY)}m{word}{RESET}")
         else:
-            m = LEAD_RE.match(line)
-            prefix = m.group(0)                     # keep leading ##/-/> literal
-            out.append(prefix + color_body(line[len(prefix):], colors))
-    return "\n".join(out)
+            out.append(word)
+        prev = j
+    out.append(text[prev:])
+    return "".join(out)
 
 
 def main():
