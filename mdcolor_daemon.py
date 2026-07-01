@@ -53,60 +53,68 @@ def active_colors():
     return {"NOUN": noun, "PROPN": noun, "ADJ": adj, "VERB": verb, "ADV": adv}
 
 
-def compute_skips(text):
-    """Return (tagger_copy, skip_ranges).
+def _clean_line(body):
+    """Strip inline-markup delimiters from a prose line, keeping the inner words.
 
-    skip_ranges are char spans that must NOT be colored: fenced-code blocks,
-    table rows, leading markdown markers, and inline spans. tagger_copy blanks
-    fenced-code/table regions to spaces (same length -> offsets preserved) so the
-    tagger isn't confused by code, while inline-span *content* and the words after
-    markers stay in place so the surrounding sentence keeps full grammatical
-    context. The whole message is tagged in one pass; coloring is masked by span.
+    Returns (clean, omap, inspan): `clean` is the delimiter-free text handed to the
+    tagger (so spaCy sees a natural sentence, not `**word**` or `` `word` ``);
+    omap[i] is the original offset of clean char i; inspan[i] is True when that char
+    came from inside an inline span (kept for context but never colored). Removing
+    the markup -- rather than blanking it to spaces -- matters: the small model is
+    whitespace-sensitive, so injected multi-space gaps flip noun/verb guesses.
 
-    This is the fix for context-blind mis-tagging: tagging fragments (e.g. the
-    text after an inline `code` span, or a line with its subject stripped) makes
-    spaCy guess noun/verb-ambiguous words wrong ("scores", "colors", "reads").
+    Fixes context-blind mis-tagging: the old code split each line on inline spans
+    and tagged the fragments, so spaCy lost sentence context and guessed
+    noun/verb-ambiguous words wrong ("scores", "colors", "reads" -> NOUN).
     """
-    chars = list(text)
-    skips, pos, in_fence = [], 0, False
-    for line in text.split("\n"):
-        start, end, stripped = pos, pos + len(line), line.strip()
-        if FENCE_RE.match(line):
-            in_fence = not in_fence
-            skips.append((start, end))
-            chars[start:end] = " " * (end - start)
-        elif in_fence or stripped.startswith("|"):
-            skips.append((start, end))
-            chars[start:end] = " " * (end - start)
-        elif stripped:
-            m = LEAD_RE.match(line)
-            if m and m.end():
-                skips.append((start, start + m.end()))   # leading ##/-/> literal
-            for sm in SKIP_RE.finditer(line):
-                skips.append((start + sm.start(), start + sm.end()))
-        pos = end + 1                       # +1 for the '\n'
-    return "".join(chars), skips
+    clean, omap, inspan, pos = [], [], [], 0
+    for m in SKIP_RE.finditer(body):
+        for k in range(pos, m.start()):
+            clean.append(body[k]); omap.append(k); inspan.append(False)
+        span = m.group()
+        a = m.start() + (len(span) - len(span.lstrip("`*_")))
+        b = m.end() - (len(span) - len(span.rstrip("`*_")))
+        for k in range(a, b):
+            clean.append(body[k]); omap.append(k); inspan.append(True)
+        pos = m.end()
+    for k in range(pos, len(body)):
+        clean.append(body[k]); omap.append(k); inspan.append(False)
+    return "".join(clean), omap, inspan
 
 
-def _masked(a, b, ranges):
-    return any(a < r1 and r0 < b for r0, r1 in ranges)
+def _color_line(body, colors):
+    clean, omap, inspan = _clean_line(body)
+    wraps = []
+    for tok in _NLP(clean):
+        if not tok.is_alpha or inspan[tok.idx]:
+            continue
+        s, e = omap[tok.idx], omap[tok.idx + len(tok.text) - 1] + 1
+        wraps.append((s, e, colors.get(tok.pos_, GRAY)))
+    if not wraps:
+        return body
+    out, prev = [], 0
+    for s, e, code in wraps:
+        out.append(body[prev:s])
+        out.append(f"\033[38;5;{code}m{body[s:e]}{RESET}")
+        prev = e
+    out.append(body[prev:])
+    return "".join(out)
 
 
 def colorize(text):
     colors = active_colors()
-    tagger_copy, skips = compute_skips(text)
-    out, prev = [], 0
-    for tok in _NLP(tagger_copy):
-        i, j = tok.idx, tok.idx + len(tok.text)
-        out.append(text[prev:i])            # gap + whitespace, verbatim from original
-        word = text[i:j]
-        if tok.is_alpha and not _masked(i, j, skips):
-            out.append(f"\033[38;5;{colors.get(tok.pos_, GRAY)}m{word}{RESET}")
+    out, in_fence = [], False
+    for line in text.split("\n"):
+        if FENCE_RE.match(line):
+            in_fence = not in_fence
+            out.append(line)                        # fence marker + code = literal
+        elif in_fence or line.strip().startswith("|") or not line.strip():
+            out.append(line)                        # code / table / blank = literal
         else:
-            out.append(word)
-        prev = j
-    out.append(text[prev:])
-    return "".join(out)
+            m = LEAD_RE.match(line)
+            prefix = m.group(0)                     # keep leading ##/-/> literal
+            out.append(prefix + _color_line(line[len(prefix):], colors))
+    return "\n".join(out)
 
 
 def main():
